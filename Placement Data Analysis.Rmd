@@ -1,0 +1,261 @@
+---
+title: "Placement Data Analysis"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(caret)
+```
+
+
+## Abstract:
+
+The project is based on a binary classification problem where our main goal is to predict whether a student will be hired or not in the campus recruitment drive being held. The data is taken from Kaggle's website and could be found at [1]. Exploratory data analysis is performed a binary classifier is built using logistic regression with family set to binomial. The model gave us an accuracy of 87% on the test set. For exploratory data analysis box plots and pie charts are used. Based on the performance of our model, we can easily deploy this model to production so that based on academics of a person it could give us a prediction of whether the person will be hired or not. The project focuses on building a logistic regression classifier to predict whether a person will be recruited or not based on input features that are present in the data set. We have a binary classification problem. The target variable has two values, the student is either placed (Recruited) or not placed (Not Recruited).
+
+## Introduction:
+
+Having enough information in hand to know which type of specialty will lead to higher chances of getting a job, does percentage / GPA matters when applying for a job, is there any biasness based on gender, or what is the salary offered to different candidates is no less than a blessing. Having these insights one could easily prepare himself / herself for a particular job. This project is based on the analysis of campus recruitment that is being done. The target variable is binary variable which tells us that whether the person is hired or not. The rest of the document explains the data set, objectives and the libraries to be used.
+
+
+## Literature Review:
+
+As far as the school and the students are concerned, the campus placement activity is quite important. To validate the techniques, a work was assessed and forecasted using the classification algorithms Decision Tree and Random Forest algorithm to enhance the students' performance (Hassan et al., 2018). This article also worked on the prediction of whether a person is hired or not based on features. The problem statement of this article is also the same as ours. The article has performed exploratory data analysis, and built two different classifiers; one is Random Forest Classifier and the second one is using logistic regression. The accuracy thus obtained on the test set is 85% and 80% for logistic regression and random forest classifier respectively (Shaikhina et al., 2018). The algorithms are applied on the data set and attributes used to build the model. The accuracy obtained after analysis for Decision tree is 84% and for the Random Forest is 86% (Douglas et al., 2011). Hence, from the above said analysis and prediction its better if the Random Forest algorithm is used to predict the placement results.
+
+
+
+## Theory:
+
+In order to be clear about the objectives of this project, a couple of questions have been devised which will be answered using the analysis performed.
+
+•	What factors determined a candidate's placement? The summary of logistic regression will provide the answer to this objective.
+
+•	Is it important to have a certain percentage to acquire a job?
+
+•	Which degree of specialty is most in demand by businesses? It will be found using the percentage of hires based on specialty.
+
+•	Build a classifier using logistic regression which could classify whether a student will be recruited or not.
+
+
+
+## Dataset:
+
+This data collection contains student placement statistics from an XYZ campus. It covers percentages and specializations from secondary and higher secondary schools. The data set could be found at https://www.kaggle.com/datasets/benroshan/factors-affecting-campus-placement. It also contains degree specialty, work experience, and pay offers to students who have been placed.
+
+•	Sr.No: It is an identifier for each record in data set.
+
+•	Gender: Represents the gender of a person.
+
+•	SSC-P: The percentage obtained in secondary school certification.
+
+•	SSC-B: What is education board? Central or Others.
+
+•	HSSC-P: The percentage obtained in higher secondary education.
+
+•	HSC-B: What is education board? Central or others.
+
+•	HSC-S: Specialization in higher secondary education.
+
+•	Degree Percentage: Percentage obtained in degree.
+
+•	Work Experience: Work experience of candidate in year.
+
+•	Specialization: The field of specialization.
+
+•	Test Score: The Entry Test Score Obtained.
+
+•	MBA: Percentage in MBA.
+
+•	Status: Target variable whether the person is recruited or not.
+
+•	Salary: Salary offered.
+
+
+The data set is cleaned prior to performing any type of data analysis. The descriptive statistics of the cleaned data is attached below:
+
+
+```{r, echo=FALSE}
+data <- read.csv("C:/Users/User/Downloads/Placement Data Full Class.csv")
+str(data)
+```
+Check for any missing values in the columns. Salary has 67 missing values. 
+```{r, echo=FALSE}
+colSums(is.na(data))
+```
+Remove rows with missing values. 
+```{r echo=FALSE}
+data$salary[is.na(data$salary)] <- round(mean(data$salary, na.rm = TRUE))
+data <- data[, 2:15]
+colSums(is.na(data))
+```
+Check for any duplicate values in the dataset. There are no duplicates in the data
+```{r}
+duplicated(data.frame(data))
+```
+
+```{r}
+summary(data)
+```
+
+
+## Methodology:
+
+  The flow of our project includes three stages. 
+  
+- The first one is data pre-processing. This step includes preparing the data set for use. The data set is checked for missing values and it is found that the salary column has 67 null values. There are multiple ways to impute missing values. In this case, the method being used is replacing the missing values with mean of that particular column. The next step includes removal of column sl_no which is unnecessary and is just an identifier which provides us no use full information. The final pre-processing step performed is to divide the data into training and testing set for training the classifier and testing the accuracy of a classifier.
+
+- The second step is exploratory data analysis. In order to explore the dataset, table function, box plots, pie charts are used to identify interesting insights and to understand the data set.
+
+- The final step is to build a logistic regression classifier which predicts whether a student is recruited or not based on his educational data points mentioned in data set description above. After building the classifier, the classifier is tested on the testing set and performance of model is evaluated using accuracy score, specificity, sensitivity, kappa statistics and confusion matrix.
+Since the first stage has been complete in the Data section, this section we will perform Exploratory data analysis and build the logistic regression classifier. 
+First we create a boxplot to visualize thr distribution of salary against gender, that is Male and Female. 
+
+```{r}
+dataVis <- filter(data, salary != 0) #filter out 0 as data with 0 values have no placement yet
+
+options(scipen=999)
+
+ggplot(dataVis, aes(salary, gender)) + geom_boxplot()
+```
+Next, we perform an analysis of the distribution of students placed and those that have not been placed using a bar chart. 
+```{r}
+ggplot(data, aes(status)) + geom_bar(fill = "blue", color = "white")
+```
+Next, using a stacked barchart, we perform an analysis on the status of students, that is thos placed and those that were not placed, against the degree type. 
+```{r}
+ggplot(data, aes(degree_t, fill = status)) + geom_bar() + facet_wrap(~status)
+```
+Next step involve building the logistic regression classifier. 
+First, we split data to 70% training set and 30% testing set. 
+```{r}
+set.seed(888)
+data$status <- as.factor(data$status)
+split1<- sample(c(rep(0, 0.7 * nrow(data)), 
+                  rep(1, 0.3 * nrow(data))))
+train <- data[split1 == 0, ] 
+test <- data[split1== 1, ]
+```
+Next, we fit the logistic regression model. 
+```{r}
+set.seed(123)
+model <- glm(status ~., 
+             data = train, 
+             family = "binomial")
+```
+
+
+## Results:
+
+
+Figure attached below shows a couple of box plots which explores different percenatges that are present in the dataset. Starting with the first one starting from left, we can see that the average SSC percentage of those students / persons who are recruited is higher as compared to those who are not recruited. The average SSC percentage of those recruited is around 70 while for those who are not recruited is below 60. Same is the case with HSC and Degree Percentage. However, the MBA percentage doesn't show any differences. We can see that the average percentage for MBA for those who are recruited and those who are not recruited is approximately same. Although for those who are recruited, the average is highest to those who are not recruited but the difference in percenatage is not so high as compared to differences in percenatges observed between HSC, SSC and Degree Percenatges.
+
+```{r, echo=FALSE}
+par(mfrow=c(2,2))
+boxplot(data$ssc_p ~ data$status, 
+        main = "SSC Percentage vs Placement Status",
+        xlab = "SSC Percentage",
+        ylab = "Placement Status",
+        col = "blue")
+
+boxplot(data$hsc_p ~ data$status, 
+        main = "HSC Percentage vs Placement Status",
+        xlab = "HSC Percentage",
+        ylab = "Placement Status",
+        col = "cyan")
+
+boxplot(data$degree_p ~ data$status, 
+        main = "Degree Percentage vs Placement Status",
+        xlab = "Degree Percentage",
+        ylab = "Placement Status",
+        col = "grey")
+
+boxplot(data$mba_p ~ data$status, 
+        main = "MBA Percentage vs Placement Status",
+        xlab = "MBA Percentage",
+        ylab = "Placement Status",
+        col = "green")
+```
+
+The pie chart below tells us that out of total people 148 who were recruited, 95 of them were having the specialization in Marketing and Finance while 53 of those who are recruited have a specialization in Marketing and HR. The percentage of people recruited with Marketing and finance percentage is 64% while for those who are recruited with Marketing and HR, the percentage is 35% approximately. This means Marketing and Finance is in higher demand as compared to Marketing and HR. 
+
+```{r, echo=FALSE}
+data_temp <- data %>%
+  filter(status == "Placed")
+plot <- as.data.frame(table(data_temp$specialisation))
+names(plot)[1] <- "Specialization"
+names(plot)[2] <- "Frequency"
+ggplot(plot, 
+       aes(x = "",
+           y = Frequency, 
+           fill = Specialization)) +
+  geom_col() +
+  geom_text(aes(label = round(Frequency, 2)),
+  position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  labs(title = "High Demand Specialization By Job Placement")
+```
+```{r echo=FALSE}
+data %>%
+  group_by(status) %>%
+  summarise(Avg_Salaries = mean(salary, na.rm = T))
+```
+
+
+Exploring the average entry test of people from both categories that are those who are recruited and those who are not recruited, a pie chart is created. It can be seen that the average entry score for those who are recruited is around 73 approximately while for those who are not recruited, the average score is 69 approximately. This means, score of a person also affects the placement decision. Higher the test score increases the chances of getting hired. Lower score, decreases the chances of being hired.
+
+```{r, echo=FALSE}
+Average_Score <- data %>%
+  group_by(status) %>%
+  summarise(Avg_Entry_Score = mean(etest_p, na.rm = T))
+
+ggplot(Average_Score, 
+       aes(x = "",
+           y = Avg_Entry_Score, 
+           fill = status)) +
+  geom_col() +
+  geom_text(aes(label = round(Avg_Entry_Score, 2)),
+  position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  labs(title = "Average Entry Test Score By Job Placement Status")
+
+```
+
+Below is the result of logistic regression model attached with family set to binomial so that the problem is treated as a classification problem rather than regression problem. According to the summary, the SSC percentage, Degree Percentage, Work Experience, MBA Percentage and Gender Male are significant as their p values are below the significance level of 0.05. The residuals of the model are symmetric around 0 which gives us an indication that the model is better fitted in this case. The overall AIC of the model is 103.73. Lower the AIC, better the performance of the model.
+
+```{r, echo=FALSE}
+summary(model)
+```
+
+The logistic regression model is tested on the test set and the result thus obtained is attached below. It can be seen that the accuracy of the model on the test set is 87% which is good in this case. The confusion matrix tells us that 13 + 43 = 56 observations are correctly classified whereas 5 + 3 = 8 observations are miss classified in this case. The confidence interval tells us that we are 95% confident that the accuracy of our model lies between 76 and 94% approximately. The kappa statistic is 68% which is good and could be improved further. Higher value of kappa statistics means a model with better performance. The specificity and sensitivity of the model is also good which is 93% and 72% respectively.
+
+```{r, echo=FALSE}
+probabilities <- model %>% predict(test, 
+                                   type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, 
+                            "Placed", 
+                            "Not Placed")
+cm <- table(predicted.classes, test$status)
+confusionMatrix(cm)
+```
+
+## Conclusions:
+
+The logistic regression model trained gave us an accuracy of 87% on the test set which is excellent in this case. We found out that the the SSC, HSC, Degree and MBA percentage affects the decision of being hired or not. The average test score of those who are being hired is greater than those who are not hired. The most demanding specialization in this data set is Marketing & Finance. The summary of logistic regression also tells us that male people have higher chances of being hired. More and more insights could be generated using the available.
+
+
+## References:
+
+Douglas, P. K., Harris, S., Yuille, A., & Cohen, M. S. (2011). Performance comparison of machine learning algorithms and number of independent components used in fMRI decoding of belief vs. disbelief. Neuroimage, 56(2), 544-553.
+
+Hasan, R., Palaniappan, S., Raziff, A. R. A., Mahmood, S., & Sarker, K. U. (2018, August). Student academic performance prediction by using decision tree algorithm. In 2018 4th international conference on computer and information sciences (ICCOINS) (pp. 1-5). IEEE.
+
+Shaikhina, T., Lowe, D., Daga, S., Briggs, D., Higgins, R., & Khovanova, N. (2019). Decision tree and random forest models for outcome prediction in antibody incompatible kidney transplantation. Biomedical Signal Processing and Control, 52, 456-462.
+
